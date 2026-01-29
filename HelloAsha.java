@@ -11,7 +11,7 @@ public class HelloAsha extends MIDlet implements CommandListener {
     private List fileList;
     private DemoCanvas demoCanvas;
     private String currentPath = "";
-    private Command backCommand, exitCommand;
+    private Command backCommand, exitCommand, playStopCommand;
     
     private byte[] mod;
     private String modTitle = "";
@@ -34,6 +34,7 @@ public class HelloAsha extends MIDlet implements CommandListener {
         display = Display.getDisplay(this);
         exitCommand = new Command("Exit", Command.EXIT, 1);
         backCommand = new Command("Back", Command.BACK, 2);
+        playStopCommand = new Command("Play", Command.OK, 0);
         showRoot();
     }
 
@@ -262,6 +263,7 @@ public class HelloAsha extends MIDlet implements CommandListener {
 
     class DemoCanvas extends Canvas implements Runnable {
         private int[] sX = new int[40], sY = new int[40], sZ = new int[40];
+        private boolean hasShownCommand = false;
         public DemoCanvas() { 
             setFullScreenMode(true); 
             Random rnd = new Random();
@@ -280,19 +282,31 @@ public class HelloAsha extends MIDlet implements CommandListener {
                 g.setColor(0, 255, 255); g.drawString("Rendering: " + renderProgress + "%", (w - g.getFont().stringWidth("Rendering: 100%"))/2, h/2, 0);
                 g.drawRect(20, h/2 + 20, w-40, 10); g.fillRect(21, h/2 + 21, (renderProgress*(w-42))/100, 8);
             } else {
-                g.setColor(0, 255, 0); String txt = isPlaying ? "TAP TO STOP" : "TAP TO PLAY";
-                g.drawString(txt, (w - g.getFont().stringWidth(txt))/2, h - 45, 0);
+                if (!hasShownCommand) {
+                    addCommand(playStopCommand);
+                    hasShownCommand = true;
+                }
+                if (hasPointerEvents()) {
+                    g.setColor(0, 255, 0); String txt = isPlaying ? "TAP TO STOP" : "TAP TO PLAY";
+                    g.drawString(txt, (w - g.getFont().stringWidth(txt))/2, h - 45, 0);
+                }
             }
         }
-        protected void pointerPressed(int x, int y) {
+        private void playStop() {
             if (isRendering) return;
             if (isPlaying) { isPlaying = false; if(audioPlayer!=null) try { audioPlayer.stop(); } catch(Exception e){} }
             else if (fullWavData != null) try { audioPlayer = Manager.createPlayer(new ByteArrayInputStream(fullWavData), "audio/x-wav"); audioPlayer.start(); isPlaying = true; } catch (Exception e) {}
         }
+        protected void pointerPressed(int x, int y) {
+            playStop();
+        }
     }
 
     public void commandAction(Command c, Displayable d) {
-        if (c == exitCommand) { isPlaying = false; isRendering = false; notifyDestroyed(); }
+        if (c == playStopCommand) {
+            ((DemoCanvas)d).playStop();
+        }
+        else if (c == exitCommand) { isPlaying = false; isRendering = false; notifyDestroyed(); }
         else if (c == backCommand) { 
             isPlaying = false; isRendering = false; if(audioPlayer != null) try { audioPlayer.close(); } catch(Exception e){}
             showRoot(); 
