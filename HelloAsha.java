@@ -284,6 +284,7 @@ public class HelloAsha extends MIDlet implements CommandListener {
             } else {
                 if (!hasShownCommand) {
                     addCommand(playStopCommand);
+                    setFullScreenMode(false);
                     hasShownCommand = true;
                 }
                 if (hasPointerEvents()) {
